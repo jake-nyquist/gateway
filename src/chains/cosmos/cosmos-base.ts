@@ -83,7 +83,7 @@ export interface CosmosTokenValue {
 
 const getExponentForAsset = (asset: Asset): number => {
   if (asset && asset.denom_units){
-    const unit = asset.denom_units.find(({ denom }) => denom === asset.display);
+    const unit = asset.denom_units.find(({ denom }: { denom: string }) => denom === asset.display);
     if (unit){
       return unit.exponent;
     } 
