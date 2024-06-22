@@ -93,7 +93,8 @@ export async function getTradeInfo(
   quoteAsset: string,
   baseAmount: Decimal,
   tradeSide: string,
-  allowedSlippage?: string
+  allowedSlippage?: string,
+  poolId?: string,
 ): Promise<TradeInfo> {
   const baseToken: Tokenish = getFullTokenFromSymbol(
     ethereumish,
@@ -115,14 +116,16 @@ export async function getTradeInfo(
       quoteToken,
       baseToken,
       requestAmount,
-      allowedSlippage
+      allowedSlippage,
+      poolId
     );
   } else {
     expectedTrade = await uniswapish.estimateSellTrade(
       baseToken,
       quoteToken,
       requestAmount,
-      allowedSlippage
+      allowedSlippage,
+      poolId
     );
   }
 
@@ -149,7 +152,8 @@ export async function price(
       req.quote,
       new Decimal(req.amount),
       req.side,
-      req.allowedSlippage
+      req.allowedSlippage,
+      req.poolId,
     );
   } catch (e) {
     if (e instanceof Error) {
@@ -217,7 +221,9 @@ export async function trade(
       req.base,
       req.quote,
       new Decimal(req.amount),
-      req.side
+      req.side,
+      req.allowedSlippage,
+      req.poolId,
     );
   } catch (e) {
     if (e instanceof Error) {
@@ -270,7 +276,8 @@ export async function trade(
       req.nonce,
       maxFeePerGasBigNumber,
       maxPriorityFeePerGasBigNumber,
-      req.allowedSlippage
+      req.allowedSlippage,
+      req.poolId,
     );
 
     if (tx.hash) {
@@ -335,7 +342,8 @@ export async function trade(
       gasLimitTransaction,
       req.nonce,
       maxFeePerGasBigNumber,
-      maxPriorityFeePerGasBigNumber
+      maxPriorityFeePerGasBigNumber,
+      req.poolId,
     );
 
     logger.info(
@@ -407,7 +415,8 @@ export async function addLiquidity(
     gasPrice,
     req.nonce,
     maxFeePerGasBigNumber,
-    maxPriorityFeePerGasBigNumber
+    maxPriorityFeePerGasBigNumber,
+    req.poolId,
   );
 
   logger.info(
@@ -571,7 +580,8 @@ export async function poolPrice(
     token1,
     req.fee!.toUpperCase(),
     req.period!,
-    req.interval!
+    req.interval!,
+    req.poolId,
   );
 
   return {

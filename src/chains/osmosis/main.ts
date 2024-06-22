@@ -1,7 +1,9 @@
+// main.ts
 import { BigNumber } from 'bignumber.js';
 import { calcPoolLiquidity } from './calcPoolLiquidity';
+import { convertGammTokenToDollarValue } from './convertGammTokenToDollarValue'; // Import the function
 import type { AssetList, ExtendedPool, PriceHash, ExtendPoolProps } from './types';
-import { convertGammTokenToDollarValue } from './convertGammTokenToDollarValue'; // Import the missing module from the correct file path.
+
 export const filterPoolsSwapAndLP = (assets: AssetList[], pools: ExtendedPool[], prices: PriceHash): ExtendedPool[] => {
   let poolsOut = pools.filter(({ $typeUrl }: ExtendedPool) => !$typeUrl?.includes('stableswap'));
 

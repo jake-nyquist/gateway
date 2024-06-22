@@ -115,6 +115,7 @@ import { TradeV2 } from '@traderjoe-xyz/sdk-v2';
 import { CurveTrade } from '../connectors/curve/curve';
 import { SerializableExtendedPool as CosmosSerializableExtendedPool } from '../chains/osmosis/osmosis.types';
 import { CarbonTrade } from '../connectors/carbon/carbonAMM';
+import { BalancerTrade } from '../connectors/balancer/balancer';
 
 // TODO Check the possibility to have clob/solana/serum equivalents here
 //  Check this link https://hummingbot.org/developers/gateway/building-gateway-connectors/#5-add-sdk-classes-to-uniswapish-interface
@@ -164,7 +165,8 @@ export type UniswapishTrade =
   | TradeXsswap
   | TradeV2
   | CurveTrade
-  | CarbonTrade;
+  | CarbonTrade
+  | BalancerTrade;
 
 export type UniswapishTradeOptions =
   | MMFTradeOptions
@@ -271,7 +273,8 @@ export interface Uniswapish {
     baseToken: Tokenish,
     quoteToken: Tokenish,
     amount: BigNumber,
-    allowedSlippage?: string
+    allowedSlippage?: string,
+    poolId?: string,
   ): Promise<ExpectedTrade>;
 
   /**
@@ -288,7 +291,8 @@ export interface Uniswapish {
     quoteToken: Tokenish,
     baseToken: Tokenish,
     amount: BigNumber,
-    allowedSlippage?: string
+    allowedSlippage?: string,
+    poolId?: string,
   ): Promise<ExpectedTrade>;
 
   /**
@@ -316,7 +320,8 @@ export interface Uniswapish {
     nonce?: number,
     maxFeePerGas?: BigNumber,
     maxPriorityFeePerGas?: BigNumber,
-    allowedSlippage?: string
+    allowedSlippage?: string,
+    poolId?: string,
   ): Promise<Transaction>;
 }
 
@@ -509,7 +514,8 @@ export interface UniswapLPish {
     gasPrice: number,
     nonce?: number,
     maxFeePerGas?: BigNumber,
-    maxPriorityFeePerGas?: BigNumber
+    maxPriorityFeePerGas?: BigNumber,
+    poolId?: string,
   ): Promise<Transaction>;
 
   /**
@@ -569,7 +575,8 @@ export interface UniswapLPish {
     token1: UniswapCoreToken,
     fee: string,
     period: number,
-    interval: number
+    interval: number,
+    poolId?: string,
   ): Promise<string[]>;
 }
 

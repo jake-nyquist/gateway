@@ -14,8 +14,7 @@ import {
   Pool,
   SwapQuoter,
   Trade as UniswapV3Trade,
-  Route,
-  FACTORY_ADDRESS,
+  Route
 } from '@uniswap/v3-sdk';
 import { abi as IUniswapV3PoolABI } from '@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Pool.sol/IUniswapV3Pool.json';
 import { abi as IUniswapV3FactoryABI } from '@uniswap/v3-core/artifacts/contracts/interfaces/IUniswapV3Factory.sol/IUniswapV3Factory.json';
@@ -56,6 +55,7 @@ export class Uniswap implements Uniswapish {
   private readonly _useRouter: boolean;
   private readonly _feeTier: FeeAmount;
   private readonly _quoterContractAddress: string;
+  private readonly _factoryAddress: string;
 
   private constructor(chain: string, network: string) {
     const config = UniswapConfig.config;
@@ -88,6 +88,7 @@ export class Uniswap implements Uniswapish {
       ? FeeAmount[config.feeTier as keyof typeof FeeAmount]
       : FeeAmount.MEDIUM;
     this._quoterContractAddress = config.quoterContractAddress(network);
+    this._factoryAddress = config.uniswapV3FactoryAddress(network);
   }
 
   public static getInstance(chain: string, network: string): Uniswap {
@@ -207,7 +208,8 @@ export class Uniswap implements Uniswapish {
     baseToken: Token,
     quoteToken: Token,
     amount: BigNumber,
-    allowedSlippage?: string
+    allowedSlippage?: string,
+    poolId?: string
   ): Promise<ExpectedTrade> {
     const nativeTokenAmount: CurrencyAmount<Token> =
       CurrencyAmount.fromRawAmount(baseToken, amount.toString());
@@ -242,7 +244,7 @@ export class Uniswap implements Uniswapish {
       );
       return { trade: route.trade, expectedAmount };
     } else {
-      const pool = await this.getPool(baseToken, quoteToken, this._feeTier);
+      const pool = await this.getPool(baseToken, quoteToken, this._feeTier, poolId);
       if (!pool) {
         throw new UniswapishPriceError(
           `priceSwapIn: no trade pair found for ${baseToken.address} to ${quoteToken.address}.`
@@ -287,7 +289,8 @@ export class Uniswap implements Uniswapish {
     quoteToken: Token,
     baseToken: Token,
     amount: BigNumber,
-    allowedSlippage?: string
+    allowedSlippage?: string,
+    poolId?: string
   ): Promise<ExpectedTrade> {
     const nativeTokenAmount: CurrencyAmount<Token> =
       CurrencyAmount.fromRawAmount(baseToken, amount.toString());
@@ -321,7 +324,7 @@ export class Uniswap implements Uniswapish {
       );
       return { trade: route.trade, expectedAmount };
     } else {
-      const pool = await this.getPool(quoteToken, baseToken, this._feeTier);
+      const pool = await this.getPool(quoteToken, baseToken, this._feeTier, poolId);
       if (!pool) {
         throw new UniswapishPriceError(
           `priceSwapOut: no trade pair found for ${quoteToken.address} to ${baseToken.address}.`
@@ -422,20 +425,21 @@ export class Uniswap implements Uniswapish {
   private async getPool(
     tokenA: Token,
     tokenB: Token,
-    feeTier: FeeAmount
+    feeTier: FeeAmount,
+    poolId?: string
   ): Promise<Pool | null> {
     const uniswapFactory = new Contract(
-      FACTORY_ADDRESS,
+      this._factoryAddress,
       IUniswapV3FactoryABI,
       this.chain.provider
     );
     // Use Uniswap V3 factory to get pool address instead of `Pool.getAddress` to check if pool exists.
-    const poolAddress = await uniswapFactory.getPool(
+    const poolAddress = poolId || await uniswapFactory.getPool(
       tokenA.address,
       tokenB.address,
       feeTier
     );
-    if (poolAddress === constants.AddressZero) {
+    if (poolAddress === constants.AddressZero || poolAddress === undefined || poolAddress === '') {
       return null;
     }
     const poolContract = new Contract(
@@ -444,16 +448,17 @@ export class Uniswap implements Uniswapish {
       this.chain.provider
     );
 
-    const [liquidity, slot0] = await Promise.all([
+    const [liquidity, slot0, fee] = await Promise.all([
       poolContract.liquidity(),
       poolContract.slot0(),
+      poolContract.fee(),
     ]);
     const [sqrtPriceX96, tick] = slot0;
 
     const pool = new Pool(
       tokenA,
       tokenB,
-      this._feeTier,
+      fee,
       sqrtPriceX96,
       liquidity,
       tick
